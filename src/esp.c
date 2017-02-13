@@ -44,6 +44,21 @@ void isr_timer() {
 	ok = true;
 }
 
+void esp_init(void) {
+	printf("AT+RST\r\n");
+	delay_ms(2000);
+//	printf("AT+CWJAP=\"SSID\",\"SENHA\"\r\n");
+//	delay_ms(5000);
+	printf("AT+CWMODE=1\r\n");
+	delay_ms(1000);
+	printf("AT+CIPMUX=1\r\n");
+	delay_ms(1000);
+	printf("AT+CIPSERVER=1,80\r\n");
+	delay_ms(1000);
+
+	return;
+}
+
 int main(void) {
 	uint16_t cont;
 
@@ -57,7 +72,7 @@ int main(void) {
 	enable_interrupts(GLOBAL);
 
 	ok = false;
-	printf("AT+RST\r\n");
+	esp_init();
 
 	while (!ok)
 		;
