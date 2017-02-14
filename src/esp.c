@@ -19,55 +19,27 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define BUFF_S	1024
+uint8_t webPage[] =
+		"<head><meta http-equiv=\" \"refresh\" \" content=\" \"3\" \">\"</head><h1><u>ESP8266 - Web Server</u></h1><h2>Porta";
 
-uint8_t esp_buffer[BUFF_S];
-uint16_t esp_index;
-bool esp_recived;
-
-#INT_RDA
-void isr_rda() {
-	set_timer0(0);
-	setup_timer_0(T0_INTERNAL | T0_DIV_128);
-	esp_buffer[esp_index] = getch();
-	esp_index++;
-
-	if (esp_index >= BUFF_S)
-		esp_index = 0;
-
-	clear_interrupt(INT_RDA);
-
-	return;
-}
-
-#INT_TIMER0
-void isr_timer0() {
-	set_timer0(0);
-	setup_timer_0(T0_OFF);
-	esp_recived = true;
-
-	return;
-}
-
-uint8_t esp_find(void) {
+uint8_t esp_find(uint8_t *esp_buffer) {
 	uint8_t ipd[] = "+IPD,";
-	uint8_t ret = 0;
+	uint8_t ret = 0xFF;
 
 	ret = strcmp(ipd, esp_buffer);
 
 	return ret;
 }
 
-void webPage(bool input) {
-	printf(
-			"<head><meta http-equiv=\" \"refresh\" \" content=\" \"3\" \">\"</head><h1><u>ESP8266 - Web Server</u></h1><h2>Porta");
+void esp_webPage(bool input) {
+	printf("%s", webPage);
 	printf("%u", input);
 	printf("</h2>");
 
 	return;
 }
 
-void cipSend(uint8_t conId, uint16_t length) {
+void esp_chipSend(uint8_t conId, uint16_t length) {
 	printf("AT+CIPSEND=");
 	printf("%u", conId);
 	printf(",");
@@ -93,35 +65,24 @@ void esp_init(void) {
 	return;
 }
 
-void mcu_init(void) {
-	esp_index = 0;
-	esp_recived = false;
-	clear_interrupt(INT_RDA);
-	clear_interrupt(INT_TIMER0);
-	enable_interrupts(INT_RDA);
-	enable_interrupts(INT_TIMER0);
-	enable_interrupts(GLOBAL);
-
-	return;
-}
-
 int main(void) {
 	uint8_t ch_id;
+	uint8_t str[] = "";
+//	uint8_t timeout;
 
-	ch_id = 0;
+	ch_id = 0xFF;
 	esp_init();
-	delay_ms(3000);
-	mcu_init();
+	delay_ms(300);
 
 	while (TRUE) {
-		if (esp_recived) {
-			esp_recived = false;
-			ch_id = esp_find();
-			delay_ms(300);
-			cipSend(ch_id, sizeof(webpage));
-			delay_ms(1000);
-			webPage(true);
-			esp_index = 0;
+//		timeout = 0xFF;
+		if (kbhit()) {
+			gets(str);
+			ch_id = esp_find(str);
+			if (ch_id != 0xFF) {
+				esp_chipSend(ch_id, sizeof(webPage) + 6);
+				esp_webPage(input(PIN_B0));
+			}
 		}
 	}
 
